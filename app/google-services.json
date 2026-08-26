@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "379431418645",
+    "project_id": "nearby-f06b8",
+    "storage_bucket": "nearby-f06b8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:379431418645:android:ddf3c83dd667a0b619871c",
+        "android_client_info": {
+          "package_name": "com.muntahaa.nearby"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbHM6m2sykqDHF183_FYquRebD40Td2lQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
