@@ -38,11 +38,12 @@ Event RSVP platform for Android.
 
 ```
 {
-  eventId: string         // doc ID
+  // eventId is the doc ID, not a stored field (Firestore @DocumentId)
   hostId: string          // ref to users/{userId}
   title: string
   description: string
-  location: geopoint | string
+  location: geopoint       // lat/lng, for map markers ("nearby" search/display)
+  locationName: string     // human-readable text, e.g. "Central Park, NYC"
   startTime: timestamp
   endTime: timestamp
   capacity: number?        // null = unlimited
