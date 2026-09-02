@@ -65,6 +65,9 @@ fun NearbyNavHost(
             EventFormScreen(
                 viewModel = eventViewModel,
                 eventId = null,
+                isOwner = true,
+                isLoadingEvent = false,
+                loadError = null,
                 onSaved = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() }
             )
@@ -74,20 +77,26 @@ fun NearbyNavHost(
             val eventViewModel: EventViewModel = hiltViewModel()
             val listUiState by eventViewModel.uiState.collectAsState()
             var hasSeeded by rememberSaveable(route.eventId) { mutableStateOf(false) }
+            val target = listUiState.events.find { it.eventId == route.eventId }
 
-            LaunchedEffect(listUiState.events, hasSeeded) {
-                if (!hasSeeded) {
-                    val target = listUiState.events.find { it.eventId == route.eventId }
-                    if (target != null) {
-                        eventViewModel.onEvent(EventFormEvent.OnStartEditing(target))
-                        hasSeeded = true
-                    }
+            LaunchedEffect(target, hasSeeded) {
+                if (!hasSeeded && target != null) {
+                    eventViewModel.onEvent(EventFormEvent.OnStartEditing(target))
+                    hasSeeded = true
                 }
             }
 
             EventFormScreen(
                 viewModel = eventViewModel,
                 eventId = route.eventId,
+                isOwner = target?.hostId == eventViewModel.currentUid,
+                isLoadingEvent = !hasSeeded && listUiState.isLoading,
+                loadError = when {
+                    hasSeeded -> null
+                    listUiState.errorMessage != null -> listUiState.errorMessage
+                    !listUiState.isLoading && target == null -> "Event not found"
+                    else -> null
+                },
                 onSaved = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() }
             )

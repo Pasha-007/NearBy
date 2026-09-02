@@ -1,6 +1,7 @@
 package com.muntahaa.nearby.events.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.muntahaa.nearby.events.EventFormEvent
@@ -43,6 +45,9 @@ import java.util.Calendar
 fun EventFormScreen(
     viewModel: EventViewModel,
     eventId: String?,
+    isOwner: Boolean,
+    isLoadingEvent: Boolean,
+    loadError: String?,
     onSaved: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -66,78 +71,110 @@ fun EventFormScreen(
                     TextButton(onClick = onCancel) { Text("Cancel") }
                 },
                 actions = {
-                    if (isEditing) {
+                    if (isEditing && isOwner) {
                         TextButton(onClick = { showDeleteConfirm = true }) { Text("Delete") }
                     }
                 }
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = formState.title,
-                onValueChange = { viewModel.onEvent(EventFormEvent.OnTitleChanged(it)) },
-                label = { Text("Title") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = formState.description,
-                onValueChange = { viewModel.onEvent(EventFormEvent.OnDescriptionChanged(it)) },
-                label = { Text("Description") },
-                minLines = 3,
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = formState.locationName,
-                onValueChange = { viewModel.onEvent(EventFormEvent.OnLocationChanged(it)) },
-                label = { Text("Location") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
+        when {
+            isLoadingEvent -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                val date = formState.date
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
+
+            loadError != null -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
                 Text(
-                    if (date != null) {
-                        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(date)
-                    } else {
-                        "Pick date & time"
-                    }
+                    text = loadError,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(24.dp),
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
-            val error = formState.error
-            if (error != null) {
-                Text(error, color = MaterialTheme.colorScheme.error)
-            }
-
-            Button(
-                onClick = {
-                    val editingId = eventId
-                    if (editingId != null) {
-                        viewModel.onEvent(EventFormEvent.OnUpdateEvent(editingId))
-                    } else {
-                        viewModel.onEvent(EventFormEvent.OnCreateEvent)
-                    }
-                },
-                enabled = !formState.isSaving && formState.title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth()
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (formState.isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(if (isEditing) "Save changes" else "Create event")
+                OutlinedTextField(
+                    value = formState.title,
+                    onValueChange = { viewModel.onEvent(EventFormEvent.OnTitleChanged(it)) },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    isError = formState.titleError != null,
+                    supportingText = {
+                        formState.titleError?.let { Text(it) }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = formState.description,
+                    onValueChange = { viewModel.onEvent(EventFormEvent.OnDescriptionChanged(it)) },
+                    label = { Text("Description") },
+                    minLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = formState.locationName,
+                    onValueChange = { viewModel.onEvent(EventFormEvent.OnLocationChanged(it)) },
+                    label = { Text("Location") },
+                    singleLine = true,
+                    isError = formState.locationNameError != null,
+                    supportingText = {
+                        formState.locationNameError?.let { Text(it) }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val date = formState.date
+                    Text(
+                        if (date != null) {
+                            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(date)
+                        } else {
+                            "Pick date & time"
+                        }
+                    )
+                }
+
+                val error = formState.error
+                if (error != null) {
+                    Text(error, color = MaterialTheme.colorScheme.error)
+                }
+
+                Button(
+                    onClick = {
+                        val editingId = eventId
+                        if (editingId != null) {
+                            viewModel.onEvent(EventFormEvent.OnUpdateEvent(editingId))
+                        } else {
+                            viewModel.onEvent(EventFormEvent.OnCreateEvent)
+                        }
+                    },
+                    enabled = !formState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (formState.isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(if (isEditing) "Save changes" else "Create event")
+                    }
                 }
             }
         }

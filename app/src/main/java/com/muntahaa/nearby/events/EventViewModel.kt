@@ -31,7 +31,9 @@ data class EventFormState(
     val locationName: String = "",
     val date: Date? = null,
     val isSaving: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val titleError: String? = null,
+    val locationNameError: String? = null
 )
 
 sealed interface EventFormEvent {
@@ -78,9 +80,9 @@ class EventViewModel @Inject constructor(
 
     fun onEvent(event: EventFormEvent) {
         when (event) {
-            is EventFormEvent.OnTitleChanged -> _formState.update { it.copy(title = event.value) }
+            is EventFormEvent.OnTitleChanged -> _formState.update { it.copy(title = event.value, titleError = null) }
             is EventFormEvent.OnDescriptionChanged -> _formState.update { it.copy(description = event.value) }
-            is EventFormEvent.OnLocationChanged -> _formState.update { it.copy(locationName = event.value) }
+            is EventFormEvent.OnLocationChanged -> _formState.update { it.copy(locationName = event.value, locationNameError = null) }
             is EventFormEvent.OnDateChanged -> _formState.update { it.copy(date = event.value) }
             EventFormEvent.OnCreateEvent -> createEvent()
             is EventFormEvent.OnUpdateEvent -> updateEvent(event.eventId)
@@ -96,8 +98,19 @@ class EventViewModel @Inject constructor(
         }
     }
 
+    private fun validateRequiredFields(form: EventFormState): Boolean {
+        val titleError = if (form.title.isBlank()) "Title is required" else null
+        val locationNameError = if (form.locationName.isBlank()) "Location is required" else null
+        if (titleError != null || locationNameError != null) {
+            _formState.update { it.copy(titleError = titleError, locationNameError = locationNameError) }
+            return false
+        }
+        return true
+    }
+
     private fun createEvent() {
         val form = _formState.value
+        if (!validateRequiredFields(form)) return
         val newEvent = Event(
             title = form.title,
             description = form.description,
@@ -120,6 +133,9 @@ class EventViewModel @Inject constructor(
     }
 
     private fun updateEvent(eventId: String) {
+        val form = _formState.value
+        if (!validateRequiredFields(form)) return
+
         val original = uiState.value.events.find { it.eventId == eventId }
         val currentUid = firebaseAuth.currentUser?.uid
         if (original == null || original.hostId != currentUid) {
@@ -127,7 +143,6 @@ class EventViewModel @Inject constructor(
             return
         }
 
-        val form = _formState.value
         val merged = original.copy(
             title = form.title,
             description = form.description,
