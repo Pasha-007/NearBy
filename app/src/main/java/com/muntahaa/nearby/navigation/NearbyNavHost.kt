@@ -17,6 +17,7 @@ import com.muntahaa.nearby.auth.ui.LoginScreen
 import com.muntahaa.nearby.auth.ui.SignUpScreen
 import com.muntahaa.nearby.events.EventFormEvent
 import com.muntahaa.nearby.events.EventViewModel
+import com.muntahaa.nearby.events.ui.EventDetailScreen
 import com.muntahaa.nearby.events.ui.EventFormScreen
 import com.muntahaa.nearby.events.ui.EventListScreen
 
@@ -56,9 +57,9 @@ fun NearbyNavHost(
                 viewModel = eventViewModel,
                 onSignOut = onSignOut,
                 onCreateEvent = { navController.navigate(NearbyDestination.CreateEvent) },
-                onEditEvent = { eventId -> navController.navigate(NearbyDestination.EditEvent(eventId)) }
+                onEditEvent = { eventId -> navController.navigate(NearbyDestination.EditEvent(eventId)) },
+                onEventClick = { eventId -> navController.navigate(NearbyDestination.EventDetail(eventId)) }
             )
-            // Next step: pass onEventClick = { id -> navController.navigate(NearbyDestination.EventDetail(id)) }
         }
         composable<NearbyDestination.CreateEvent> {
             val eventViewModel: EventViewModel = hiltViewModel()
@@ -99,6 +100,21 @@ fun NearbyNavHost(
                 },
                 onSaved = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() }
+            )
+        }
+        composable<NearbyDestination.EventDetail> { backStackEntry ->
+            val route: NearbyDestination.EventDetail = backStackEntry.toRoute()
+            val eventViewModel: EventViewModel = hiltViewModel()
+            val listUiState by eventViewModel.uiState.collectAsState()
+            val target = listUiState.events.find { it.eventId == route.eventId }
+
+            EventDetailScreen(
+                event = target,
+                isLoading = listUiState.isLoading,
+                errorMessage = listUiState.errorMessage,
+                isOwner = target?.hostId == eventViewModel.currentUid,
+                onEditClick = { navController.navigate(NearbyDestination.EditEvent(route.eventId)) },
+                onBack = { navController.popBackStack() }
             )
         }
     }

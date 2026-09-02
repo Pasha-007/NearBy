@@ -18,5 +18,6 @@ sealed interface NearbyDestination {
     @Serializable
     data class EditEvent(val eventId: String) : NearbyDestination
 
-    // Next step: @Serializable data class EventDetail(val eventId: String) : NearbyDestination
+    @Serializable
+    data class EventDetail(val eventId: String) : NearbyDestination
 }

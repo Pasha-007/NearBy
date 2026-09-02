@@ -1,5 +1,6 @@
 package com.muntahaa.nearby.events.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +38,8 @@ fun EventListScreen(
     viewModel: EventViewModel,
     onSignOut: () -> Unit,
     onCreateEvent: () -> Unit,
-    onEditEvent: (String) -> Unit
+    onEditEvent: (String) -> Unit,
+    onEventClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUid = viewModel.currentUid
@@ -87,10 +89,10 @@ fun EventListScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(uiState.events, key = { it.eventId }) { event ->
-                        // Next step: onClick = { onEventClick(event.eventId) } for event-detail navigation
                         EventCard(
                             event = event,
                             isOwnedByCurrentUser = event.hostId == currentUid,
+                            onClick = { onEventClick(event.eventId) },
                             onEditClick = { onEditEvent(event.eventId) }
                         )
                     }
@@ -104,9 +106,13 @@ fun EventListScreen(
 private fun EventCard(
     event: Event,
     isOwnedByCurrentUser: Boolean,
+    onClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .clickable(onClick = onClick)
+    ) {
         Column(Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
