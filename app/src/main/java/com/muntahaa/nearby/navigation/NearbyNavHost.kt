@@ -1,14 +1,23 @@
 package com.muntahaa.nearby.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.muntahaa.nearby.auth.AuthViewModel
 import com.muntahaa.nearby.auth.ui.LoginScreen
 import com.muntahaa.nearby.auth.ui.SignUpScreen
+import com.muntahaa.nearby.events.EventFormEvent
 import com.muntahaa.nearby.events.EventViewModel
+import com.muntahaa.nearby.events.ui.EventFormScreen
 import com.muntahaa.nearby.events.ui.EventListScreen
 
 @Composable
@@ -43,8 +52,45 @@ fun NearbyNavHost(
         }
         composable<NearbyDestination.EventList> {
             val eventViewModel: EventViewModel = hiltViewModel()
-            EventListScreen(viewModel = eventViewModel, onSignOut = onSignOut)
+            EventListScreen(
+                viewModel = eventViewModel,
+                onSignOut = onSignOut,
+                onCreateEvent = { navController.navigate(NearbyDestination.CreateEvent) },
+                onEditEvent = { eventId -> navController.navigate(NearbyDestination.EditEvent(eventId)) }
+            )
             // Next step: pass onEventClick = { id -> navController.navigate(NearbyDestination.EventDetail(id)) }
+        }
+        composable<NearbyDestination.CreateEvent> {
+            val eventViewModel: EventViewModel = hiltViewModel()
+            EventFormScreen(
+                viewModel = eventViewModel,
+                eventId = null,
+                onSaved = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() }
+            )
+        }
+        composable<NearbyDestination.EditEvent> { backStackEntry ->
+            val route: NearbyDestination.EditEvent = backStackEntry.toRoute()
+            val eventViewModel: EventViewModel = hiltViewModel()
+            val listUiState by eventViewModel.uiState.collectAsState()
+            var hasSeeded by rememberSaveable(route.eventId) { mutableStateOf(false) }
+
+            LaunchedEffect(listUiState.events, hasSeeded) {
+                if (!hasSeeded) {
+                    val target = listUiState.events.find { it.eventId == route.eventId }
+                    if (target != null) {
+                        eventViewModel.onEvent(EventFormEvent.OnStartEditing(target))
+                        hasSeeded = true
+                    }
+                }
+            }
+
+            EventFormScreen(
+                viewModel = eventViewModel,
+                eventId = route.eventId,
+                onSaved = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() }
+            )
         }
     }
 }

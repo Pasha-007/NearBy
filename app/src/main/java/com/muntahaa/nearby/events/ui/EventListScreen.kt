@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,9 +35,12 @@ import java.text.DateFormat
 @Composable
 fun EventListScreen(
     viewModel: EventViewModel,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onCreateEvent: () -> Unit,
+    onEditEvent: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val currentUid = viewModel.currentUid
 
     Scaffold(
         topBar = {
@@ -47,6 +52,11 @@ fun EventListScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreateEvent) {
+                Text("+")
+            }
         }
     ) { paddingValues ->
         Box(
@@ -78,7 +88,11 @@ fun EventListScreen(
                 ) {
                     items(uiState.events, key = { it.eventId }) { event ->
                         // Next step: onClick = { onEventClick(event.eventId) } for event-detail navigation
-                        EventCard(event)
+                        EventCard(
+                            event = event,
+                            isOwnedByCurrentUser = event.hostId == currentUid,
+                            onEditClick = { onEditEvent(event.eventId) }
+                        )
                     }
                 }
             }
@@ -87,10 +101,24 @@ fun EventListScreen(
 }
 
 @Composable
-private fun EventCard(event: Event) {
+private fun EventCard(
+    event: Event,
+    isOwnedByCurrentUser: Boolean,
+    onEditClick: () -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Text(event.title, style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(event.title, style = MaterialTheme.typography.titleMedium)
+                if (isOwnedByCurrentUser) {
+                    TextButton(onClick = onEditClick) {
+                        Text("Edit")
+                    }
+                }
+            }
             Spacer(Modifier.height(4.dp))
             Text(event.locationName, style = MaterialTheme.typography.bodyMedium)
             event.startTime?.let { startTime ->
