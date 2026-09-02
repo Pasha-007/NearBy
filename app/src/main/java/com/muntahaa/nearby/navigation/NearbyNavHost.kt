@@ -20,6 +20,7 @@ import com.muntahaa.nearby.events.EventViewModel
 import com.muntahaa.nearby.events.ui.EventDetailScreen
 import com.muntahaa.nearby.events.ui.EventFormScreen
 import com.muntahaa.nearby.events.ui.EventListScreen
+import com.muntahaa.nearby.rsvp.RsvpViewModel
 
 @Composable
 fun NearbyNavHost(
@@ -105,14 +106,24 @@ fun NearbyNavHost(
         composable<NearbyDestination.EventDetail> { backStackEntry ->
             val route: NearbyDestination.EventDetail = backStackEntry.toRoute()
             val eventViewModel: EventViewModel = hiltViewModel()
+            val rsvpViewModel: RsvpViewModel = hiltViewModel()
             val listUiState by eventViewModel.uiState.collectAsState()
+            val rsvpUiState by rsvpViewModel.uiState.collectAsState()
             val target = listUiState.events.find { it.eventId == route.eventId }
+
+            LaunchedEffect(route.eventId) {
+                rsvpViewModel.observeRsvp(route.eventId)
+            }
 
             EventDetailScreen(
                 event = target,
                 isLoading = listUiState.isLoading,
                 errorMessage = listUiState.errorMessage,
                 isOwner = target?.hostId == eventViewModel.currentUid,
+                rsvpStatus = rsvpUiState.status,
+                isRsvpUpdating = rsvpUiState.isUpdating,
+                rsvpError = rsvpUiState.error,
+                onRsvpStatusSelected = { status -> rsvpViewModel.setStatus(route.eventId, status) },
                 onEditClick = { navController.navigate(NearbyDestination.EditEvent(route.eventId)) },
                 onBack = { navController.popBackStack() }
             )
